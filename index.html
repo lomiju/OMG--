@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OMG 可愛動物園</title>
+    
+    <!-- 1. 引入 Tailwind CSS (樣式引擎) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. 引入 React 和 Babel (核心引擎) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 3. 設定模組引入 (讓 Lucide 圖示可以運作) -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.300.0"
+      }
+    }
+    </script>
+
+    <style>
+        /* 防止手機下拉重整 */
+        body { overscroll-behavior-y: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        @keyframes float { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-5px); opacity: 0.6; } }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-float { animation: float 8s ease-in-out infinite; }
+        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    </style>
+</head>
+<body class="bg-[#fcf9f2]">
+    <div id="root"></div>
+
+    <!-- 4. 主要程式邏輯 -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+          Home, Dice5, Scissors, Star, Cloud, Sun, ArrowRight, 
+          Lightbulb, Info, Trees, BookOpen, PawPrint, CheckCircle2,
+          Package, Coins, Layers, RefreshCcw, Bird, Minus, Plus
+        } from 'lucide-react';
+
+        // --- 1. 視覺裝飾：漫畫森林橫幅 ---
+        const ForestHeader = () => (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+            <div className="absolute inset-0 bg-gradient-to-b from-sky-200 to-white" />
+            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-emerald-50 rounded-[100%] translate-y-1/2 blur-sm" />
+            
+            <Cloud className="absolute top-2 left-4 text-white w-8 h-8 opacity-40 animate-float" />
+            <Sun className="absolute top-1 right-4 text-yellow-400 w-8 h-8 opacity-60 animate-spin-slow" />
+            
+            <div className="absolute inset-x-0 bottom-0 px-2 flex justify-between items-end h-full pb-1">
+              <div className="flex items-end -space-x-1 opacity-90 scale-75 origin-bottom-left">
+                <span className="text-5xl animate-bounce" style={{animationDelay:'0.1s'}}>🦁</span>
+                <span className="text-3xl animate-bounce" style={{animationDelay:'0.3s'}}>🐘</span>
+                <span className="text-2xl pb-1 animate-bounce">🐵</span>
+              </div>
+              <div className="flex items-end -space-x-1 opacity-90 scale-75 origin-bottom-right">
+                <span className="text-2xl animate-bounce" style={{animationDelay:'0.4s'}}>🐰</span>
+                <span className="text-6xl animate-bounce leading-tight -mb-1" style={{animationDelay:'0.1s'}}>🦒</span>
+                <span className="text-4xl animate-bounce" style={{animationDelay:'0.2s'}}>🦛</span>
+              </div>
+            </div>
+          </div>
+        );
+
+        // --- 2. 核心實物圖案 ---
+        const PizzaVisual = () => (
+          <div className="relative w-full h-full rounded-full bg-orange-600 border-2 border-amber-800 shadow-inner overflow-hidden">
+            <div className="absolute inset-1 rounded-full bg-yellow-400 border border-orange-300 shadow-sm" />
+            <div className="absolute top-8 left-10 w-6 h-6 bg-red-600 rounded-full opacity-80" />
+            <div className="absolute bottom-10 right-10 w-8 h-8 bg-red-600 rounded-full opacity-80" />
+            <div className="absolute top-12 left-20 w-4 h-2 bg-green-600 rounded-sm rotate-45" />
+          </div>
+        );
+
+        const ToastVisual = () => (
+          <div className="relative w-full h-full rounded-2xl bg-amber-700 border-2 border-amber-900 shadow-inner overflow-hidden p-1.5 flex items-center justify-center">
+            <div className="w-full h-full rounded-xl bg-[#fff8e1] flex items-center justify-center relative">
+              <div className="absolute inset-3 rounded-lg bg-red-500/80 blur-[1px]" />
+              <span className="z-10 text-3xl">🍓</span>
+            </div>
+          </div>
+        );
+
+        const ChocolateVisual = () => (
+          <div className="relative w-full h-full rounded-lg bg-amber-950 border-2 border-black p-1 grid grid-cols-2 grid-rows-2 gap-1 shadow-xl">
+            <div className="bg-amber-900 rounded-sm shadow-inner border border-amber-950/20" />
+            <div className="bg-amber-900 rounded-sm shadow-inner border border-amber-950/20" />
+            <div className="bg-amber-900 rounded-sm shadow-inner border border-amber-950/20" />
+            <div className="bg-amber-900 rounded-sm shadow-inner border border-amber-950/20" />
+          </div>
+        );
+
+        const RibbonVisual = () => (
+          <div className="relative w-full h-10 flex items-center justify-center">
+            <div className="w-full h-8 bg-gradient-to-b from-pink-400 to-pink-600 border-y-2 border-pink-800 flex items-center justify-center relative shadow-md">
+               <div className="absolute left-0 top-0 bottom-0 w-5 bg-white" style={{clipPath:'polygon(100% 0, 0 0, 70% 50%, 0 100%, 100% 100%)'}} />
+               <div className="absolute right-0 top-0 bottom-0 w-5 bg-white" style={{clipPath:'polygon(0 0, 100% 0, 30% 50%, 100% 100%, 0 100%)'}} />
+               <span className="text-xl">🎀</span>
+            </div>
+          </div>
+        );
+
+        // --- 3. 模組元件 ---
+        const Feedback = ({ status, message, onRetry, onNext }) => (
+          <div className="absolute inset-0 bg-white/95 z-50 rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in shadow-2xl">
+            <div className="text-8xl mb-4 animate-bounce">{status === 'success' ? '🐼🎉' : '🐰💦'}</div>
+            <h2 className={`text-3xl font-black mb-2 ${status === 'success' ? 'text-green-600' : 'text-orange-500'}`}>
+              {status === 'success' ? '超級厲害！' : '再試一次喔！'}
+            </h2>
+            <p className="text-slate-600 font-bold mb-8">{message}</p>
+            <button onClick={status === 'success' ? onNext : onRetry} className={`w-full py-4 rounded-2xl font-black text-white text-lg shadow-md active:scale-95 transition-all ${status === 'success' ? 'bg-yellow-500' : 'bg-slate-800'}`}>
+              {status === 'success' ? '挑戰下一關' : '返回修改'}
+            </button>
+          </div>
+        );
+
+        const GuideTip = ({ context, layout, tips }) => {
+          const [open, setOpen] = useState(false);
+          return (
+            <div className="mt-4 w-full">
+              <button onClick={() => setOpen(!open)} className="text-[10px] font-black text-amber-600 bg-amber-50 px-3 py-1 rounded-t-lg border border-b-0 border-amber-100 flex items-center gap-1">
+                <BookOpen size={12}/> 教學建議 {open ? '▲' : '▼'}
+              </button>
+              {open && (
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-b-xl rounded-tr-xl text-left animate-in slide-in-from-top-1">
+                  <p className="text-amber-800 text-xs font-bold italic mb-2">情境：{context}</p>
+                  <p className="text-amber-700 text-[10px] mb-2">佈置：{layout}</p>
+                  <div className="pt-2 border-t border-amber-200 text-[9px] text-amber-900 font-black italic">小叮嚀：{tips}</div>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // --- 4. 主程式 App ---
+        const App = () => {
+          const [view, setView] = useState('home');
+          const [status, setStatus] = useState(null); 
+          
+          // 等分派對
+          const [shape, setShape] = useState('pizza');
+          const [parts, setParts] = useState(1);
+          const [target, setTarget] = useState(2);
+          const [cutMode, setCutMode] = useState('vertical');
+
+          // 分裝
+          const [packRem, setPackRem] = useState(12);
+          const [packBags, setPackBags] = useState([]);
+
+          // 錢幣
+          const [moneyTarget, setMoneyTarget] = useState(35);
+          const [moneyAmt, setMoneyAmt] = useState(0);
+          const [moneyCoins, setMoneyCoins] = useState([]);
+
+          // 位值
+          const [numVal, setNumVal] = useState(0);
+          const [numTarget, setNumTarget] = useState(42);
+
+          // --- 重置邏輯 ---
+          const resetAll = () => {
+            setStatus(null);
+            if (view === 'equal') { setTarget([2, 4, 8][Math.floor(Math.random() * 3)]); setParts(1); }
+            if (view === 'pack') { setPackRem(12); setPackBags([]); }
+            if (view === 'money') { setMoneyTarget([15, 25, 30, 45, 55][Math.floor(Math.random() * 5)]); setMoneyAmt(0); setMoneyCoins([]); }
+            if (view === 'place') { setNumTarget(Math.floor(Math.random() * 98) + 1); setNumVal(0); }
+          };
+
+          // --- 幾何渲染 (iPhone 13 優化) ---
+          const renderShapes = () => {
+            const pieces = [];
+            const gap = parts === 8 ? 35 : 60; 
+
+            for (let i = 0; i < parts; i++) {
+              let tx = 0, ty = 0, path = "none";
+              if (parts > 1) {
+                if (shape === 'pizza') {
+                  const angle = 360 / parts;
+                  const midR = ((angle * i + angle / 2) * Math.PI) / 180;
+                  tx = Math.cos(midR) * gap; ty = Math.sin(midR) * gap;
+                  const sR = (angle * i * Math.PI) / 180; const eR = (angle * (i + 1) * Math.PI) / 180;
+                  let pts = [`50% 50%`, `${50 + 100 * Math.cos(sR)}% ${50 + 100 * Math.sin(sR)}%`];
+                  if (parts === 2) {
+                     if (cutMode === 'vertical') { if(i===0) pts.push('0% 0%', '0% 100%'); else pts.push('100% 100%', '100% 0%'); }
+                     else { if(i===0) pts.push('100% 0%', '0% 0%'); else pts.push('0% 100%', '100% 100%'); }
+                  } else if (parts === 4) {
+                     if(i===0) pts.push('100% 0%'); if(i===1) pts.push('100% 100%'); if(i===2) pts.push('0% 100%'); if(i===3) pts.push('0% 0%');
+                  }
+                  pts.push(`${50 + 100 * Math.cos(eR)}% ${50 + 100 * Math.sin(eR)}%`);
+                  path = `polygon(${pts.join(',')})`;
+                } else {
+                  const step = 100 / parts;
+                  if (cutMode === 'vertical') { tx = (i - (parts - 1) / 2) * (gap * 1.5); path = `inset(0% ${(parts - 1 - i) * step}% 0% ${i * step}%)`; }
+                  else if (cutMode === 'horizontal') { ty = (i - (parts - 1) / 2) * (gap * 1.5); path = `inset(${i * step}% 0% ${(parts - 1 - i) * step}% 0%)`; }
+                  else {
+                    if (parts === 2) { tx = i === 0 ? -gap : gap; ty = i === 0 ? -gap : gap; path = i === 0 ? "polygon(0 0, 100% 0, 0 100%)" : "polygon(100% 100%, 100% 0, 0 100%)"; }
+                    else { 
+                        const colC = parts === 8 ? 4 : 2; const r = Math.floor(i / colC), c = i % colC;
+                        tx = (c - (colC - 1) / 2) * gap * 2; ty = (r - 0.5) * gap * 2;
+                        path = `inset(${r * 50}% ${(colC - 1 - c) * (100/colC)}% ${(1 - r) * 50}% ${c * (100/colC)}%)`;
+                    }
+                  }
+                }
+              }
+              pieces.push(
+                <div key={i} className={`absolute w-full ${shape==='ribbon'?'h-auto':'h-full'} transition-all duration-500 shadow-lg`} style={{ clipPath: path, transform: `translate(${tx}px, ${ty}px)` }}>
+                  {shape === 'pizza' && <PizzaVisual />}{shape === 'toast' && <ToastVisual />}{shape === 'chocolate' && <ChocolateVisual />}{shape === 'ribbon' && <RibbonVisual />}
+                </div>
+              );
+            }
+            return <div className={`relative w-40 h-40 flex items-center justify-center transition-transform ${parts === 8 ? 'scale-90' : 'scale-100'}`}>{pieces}</div>;
+          };
+
+          return (
+            <div className="min-h-screen bg-[#fcf9f2] font-sans text-slate-900 flex flex-col relative overflow-hidden">
+              
+              {/* 標題欄 */}
+              <header className="h-24 bg-white border-b-2 border-yellow-500 sticky top-0 z-30 shadow-md flex items-center justify-center overflow-hidden">
+                <ForestHeader />
+                <div className="relative z-10 flex flex-col items-center">
+                    <div className="relative inline-block group">
+                        <Star className="absolute -left-8 -top-1 text-yellow-400 fill-yellow-400 w-6 h-6 animate-pulse" />
+                        <h1 className="text-5xl font-black italic tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-yellow-400 via-orange-500 to-amber-700 select-none drop-shadow-sm px-4" style={{fontFamily:'cursive'}}>
+                          OMG
+                        </h1>
+                        <Star className="absolute -right-6 bottom-0 text-yellow-300 fill-yellow-300 w-5 h-5 animate-bounce" />
+                    </div>
+                    <p className="text-[10px] font-black tracking-[0.2em] text-amber-900 uppercase opacity-70 italic mt-0.5">可愛動物園數學平台</p>
+                </div>
+                {view !== 'home' && <button onClick={() => {setView('home'); setStatus(null);}} className="absolute top-2 right-2 bg-slate-800 text-white px-3 py-1 rounded-lg text-[10px] font-black shadow-md border border-yellow-400 active:scale-90 z-20">回主選單</button>}
+              </header>
+
+              <main className="flex-grow max-w-md mx-auto p-4 w-full relative z-10">
+                {view === 'home' ? (
+                  <div className="space-y-3 pt-4 animate-in fade-in slide-in-from-bottom-4 text-center">
+                    <h2 className="text-xl font-black text-slate-800 italic">選個挑戰開始吧！</h2>
+                    <div className="grid grid-cols-1 gap-3">
+                      {[
+                        { id: 'equal', title: '等分派對', emoji: '🦛', color: 'bg-blue-400', desc: '平分食物給朋友！' },
+                        { id: 'pack', title: '分裝教學', emoji: '🐼', color: 'bg-green-500', desc: '幫熊貓裝竹筍籃子！' },
+                        { id: 'money', title: '錢幣運用', emoji: '🦁', color: 'bg-orange-500', desc: '獅子商店買東西！' },
+                        { id: 'place', title: '數值位值', emoji: '🦒', color: 'bg-purple-500', desc: '蓋好十進位積木！' }
+                      ].map(item => (
+                        <button key={item.id} onClick={() => setView(item.id)} className="bg-white p-4 rounded-[1.8rem] shadow-lg flex items-center gap-4 border-2 border-transparent active:border-yellow-400 active:scale-95 transition-all">
+                          <div className={`${item.color} text-white w-14 h-14 rounded-2xl flex items-center justify-center text-4xl border border-white shadow-sm`}>{item.emoji}</div>
+                          <div className="flex-1 text-left"><h3 className="font-black text-lg text-slate-800">{item.title}</h3><p className="text-slate-400 text-[9px] font-bold">{item.desc}</p></div>
+                          <ArrowRight size={20} className="text-slate-200" />
+                        </button>
+                      ))}
+                    </div>
+                    <div className="bg-white rounded-[2rem] p-6 border-2 border-yellow-50 shadow-inner flex items-center gap-4 mt-4">
+                       <span className="text-6xl animate-bounce">🦉</span>
+                       <p className="text-slate-500 text-[11px] font-bold italic text-left">
+                         小朋友，準備好了嗎？觀察下方的「教學建議」，裡面藏著讓我們變聰明的祕方喔！
+                       </p>
+                    </div>
+                  </div>
+                ) : view === 'equal' ? (
+                  <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl border-2 border-slate-100 min-h-[580px] flex flex-col relative animate-in zoom-in-95">
+                    {status && <Feedback status={status} message={status==='success'?'分得好棒喔！':'份數好像不對耶？'} onRetry={()=>setStatus(null)} onNext={resetAll} />}
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-black text-slate-700 flex items-center gap-1.5"><Scissors size={18}/> 等分派對</h3>
+                      <div className="flex gap-2">
+                        <button onClick={resetAll} className="bg-amber-400 text-white p-2 rounded-xl active:scale-90 shadow-md"><Dice5 size={18} /></button>
+                        <select value={shape} onChange={(e)=>{setShape(e.target.value);setParts(1);}} className="border-2 border-pink-100 rounded-xl px-2 py-1 font-black text-[11px] bg-white outline-none">
+                          <option value="pizza">🍕 披薩</option><option value="toast">🍞 吐司</option><option value="chocolate">🍫 巧克力</option><option value="ribbon">🎀 緞帶</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 mb-4 overflow-x-auto no-scrollbar pb-1">
+                      {['vertical','horizontal','diagonal'].map(m => (
+                        <button key={m} onClick={()=>{setCutMode(m);setParts(1);}} className={`flex-1 min-w-[70px] py-1.5 rounded-lg text-[10px] font-black transition-all ${cutMode===m?'bg-indigo-600 text-white shadow-md':'bg-slate-50 text-slate-400'}`}>
+                          {m==='vertical'?'直切':m==='horizontal'?'橫切':'對角切'}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-xl text-blue-800 text-center font-bold text-xs mb-6 italic border border-blue-100">平分給 <span className="text-2xl font-black underline decoration-2 mx-1">{target}</span> 位好朋友吧！</div>
+                    <div className="flex-grow flex items-center justify-center relative min-h-[180px]">{renderShapes()}</div>
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                       <span className="text-slate-400 font-black text-[10px] uppercase tracking-tighter">目前的份數</span>
+                       <div className="bg-orange-500 text-white px-5 py-0.5 rounded-full text-xl font-black shadow-md animate-pop">{parts}</div>
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button onClick={()=>{if(parts<8)setParts(parts*2);else setParts(1);}} className="flex-[2] bg-orange-500 text-white py-4 rounded-2xl font-black text-lg shadow-[0_5px_0_0_#9c4221] active:translate-y-1 active:shadow-none flex items-center justify-center gap-2 transition-all"><Scissors size={20} /> 切一刀</button>
+                      <button onClick={()=>setStatus(parts===target?'success':'error')} className="flex-1 bg-blue-500 text-white py-4 rounded-2xl font-black text-lg active:translate-y-1 shadow-md">送出 😋</button>
+                    </div>
+                    <GuideTip context="「幫河馬多多平分食物！每一片都要長得一模一樣大喔！」" layout="準備圓盤教具進行演示。" tips="iPhone 13 上的暴力位移間距能強化『獨立份數』的視覺感。" />
+                  </div>
+                ) : view === 'pack' ? (
+                  <div className="bg-white p-5 rounded-[2.5rem] shadow-xl border-2 border-slate-100 min-h-[500px] flex flex-col relative animate-in zoom-in-95">
+                    {status && <Feedback status={status} message="熊貓團團吃飽囉！" onRetry={()=>setStatus(null)} onNext={resetAll} />}
+                    <div className="flex justify-between items-center mb-4"><h3 className="text-base font-black text-slate-800 flex items-center gap-1.5"><Package size={18}/> 分竹筍 🐼</h3><button onClick={resetAll} className="bg-amber-400 text-white p-2 rounded-xl active:scale-90 shadow-md"><Dice5 size={18} /></button></div>
+                    <p className="bg-green-50 p-3 rounded-xl text-green-800 font-bold mb-4 text-center text-xs italic">有 12 根竹筍，每 3 根分一袋。</p>
+                    <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-4 mb-4 flex flex-wrap gap-1.5 justify-center min-h-[140px] shadow-inner">{Array.from({length:packRem}).map((_, i) => <span key={i} className="text-3xl animate-bounce">🎋</span>)}</div>
+                    <div className="grid grid-cols-2 gap-2 mb-4 overflow-y-auto max-h-[100px] p-1">{packBags.map((_, i) => <div key={i} className="bg-amber-50 border border-amber-200 p-2 rounded-lg flex justify-center text-[10px] font-black shadow-sm animate-pop">第 {i+1} 籃 🧺</div>)}</div>
+                    <div className="flex gap-3 mt-auto"><button onClick={()=>{if(packRem>=3){setPackRem(r=>r-3);setPackBags(b=>[...b,1]);}}} disabled={packRem<3} className="flex-[2] bg-green-500 text-white py-4 rounded-xl font-black text-lg active:translate-y-1 active:shadow-none transition-all">🧺 裝一籃</button><button onClick={()=>setStatus(packRem===0?'success':'error')} className="flex-1 bg-blue-500 text-white py-4 rounded-xl font-black text-lg">送出</button></div>
+                  </div>
+                ) : view === 'money' ? (
+                  <div className="bg-white p-5 rounded-[2.5rem] shadow-xl border-2 border-slate-100 min-h-[500px] flex flex-col relative animate-in zoom-in-95">
+                    {status && <Feedback status={status} message="付錢完成囉！" onRetry={()=>setStatus(null)} onNext={resetAll} />}
+                    <div className="flex justify-between items-center mb-4"><h3 className="text-base font-black text-slate-800 flex items-center gap-1.5"><Coins size={18}/> 獅子商店 🦁</h3><button onClick={resetAll} className="bg-amber-400 text-white p-2 rounded-xl shadow-md"><Dice5 size={18} /></button></div>
+                    <div className="flex flex-col items-center gap-3 mb-6"><div className="bg-white border-4 border-orange-100 p-4 rounded-3xl shadow-lg text-center relative"><p className="text-slate-400 font-black text-[9px] mb-1">蘋果售價：</p><div className="text-6xl font-black text-orange-500 tabular-nums"><span className="text-xl mr-1">$</span>{moneyTarget}</div></div><div className="text-6xl animate-bounce">🍎</div></div>
+                    <div className="bg-sky-50 p-5 rounded-3xl min-h-[120px] mb-4 flex flex-wrap gap-4 justify-center items-center border-2 border-dashed border-sky-100 shadow-inner">{moneyCoins.map((c,i)=><div key={i} className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg text-white border-4 border-white shadow-xl animate-pop ${c===10?'bg-yellow-600':'bg-yellow-400'}`}>{c}</div>)}</div>
+                    <div className="grid grid-cols-2 gap-4 mb-4"><button onClick={()=>{if(moneyAmt+10<=100){setMoneyAmt(a=>a+10);setMoneyCoins(c=>[...c,10]);}}} className="bg-yellow-600 text-white py-3 rounded-xl font-black text-xl shadow-md">+10 元</button><button onClick={()=>{if(moneyAmt+5<=100){setMoneyAmt(a=>a+5);setMoneyCoins(c=>[...c,5]);}}} className="bg-yellow-400 text-white py-3 rounded-xl font-black text-xl shadow-md">+5 元</button></div>
+                    <div className="flex gap-4"><button onClick={()=>{setMoneyCoins([]);setMoneyAmt(0);}} className="flex-1 bg-slate-100 text-slate-400 font-black py-3 rounded-xl text-xs">重收</button><button onClick={()=>setStatus(moneyAmt===moneyTarget?'success':'error')} className="flex-[2] bg-blue-500 text-white py-3 rounded-xl font-black text-xl shadow-md">付錢 🍎</button></div>
+                  </div>
+                ) : (
+                  <div className="bg-white p-5 rounded-[2.5rem] shadow-xl border-2 border-slate-100 min-h-[500px] flex flex-col relative animate-in zoom-in-95">
+                    {status && <Feedback status={status} message="蓋好積木大樓囉！" onRetry={()=>setStatus(null)} onNext={resetAll} />}
+                    <div className="flex justify-between items-center mb-4"><h3 className="text-base font-black text-slate-800 flex items-center gap-1.5"><Layers size={18}/> 積木挑戰 🦒</h3><button onClick={resetAll} className="bg-amber-400 text-white p-2 rounded-xl shadow-md"><Dice5 size={18} /></button></div>
+                    <div className="bg-purple-50 p-5 rounded-2xl text-center mb-4 border-2 border-purple-100 relative shadow-inner"><p className="text-purple-400 font-black mb-1 text-xs">挑戰目標：</p><div className="text-7xl font-black text-purple-600 animate-pulse">{numTarget}</div></div>
+                    <div className="flex gap-3 mb-4">
+                      <div className="flex-1 bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-inner flex flex-col items-center"><div className="bg-purple-500 text-white rounded-full px-3 py-1 text-[9px] font-black mb-3">十位：{Math.floor(numVal/10)}</div><div className="flex flex-wrap gap-1 justify-center min-h-[140px] items-end pb-2">{Array.from({length:Math.floor(numVal/10)}).map((_,i)=><div key={i} className="w-4 h-24 bg-purple-400 rounded-sm border border-purple-600 flex flex-col justify-between p-0.5">{Array.from({length:10}).map((__,j)=><div key={j} className="h-1.5 w-full bg-purple-200/40 rounded-sm"></div>)}</div>)}</div></div>
+                      <div className="flex-1 bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-inner flex flex-col items-center"><div className="bg-orange-500 text-white rounded-full px-3 py-1 text-[9px] font-black mb-3">個位：{numVal%10}</div><div className="grid grid-cols-4 gap-1 min-h-[140px] content-end justify-center pb-2">{Array.from({length:numVal%10}).map((_,i)=><div key={i} className="w-3 h-3 bg-orange-400 rounded-sm border border-orange-600 shadow-sm animate-pop"></div>)}</div></div>
+                    </div>
+                    <div className="flex items-center justify-center gap-3 mb-6"><button onClick={()=>setNumVal(p=>Math.max(0,p-10))} className="w-10 h-10 bg-slate-100 rounded-lg font-black text-[10px] border-b-4 border-slate-200 active:translate-y-2">-10</button><button onClick={()=>setNumVal(p=>Math.max(0,p-1))} className="w-12 h-12 bg-white border-2 border-slate-100 rounded-xl text-xl font-black active:scale-90 shadow-sm">-</button><div className="text-6xl font-black w-20 text-center text-slate-800">{numVal}</div><button onClick={()=>setNumVal(p=>Math.min(99,p+1))} className="w-12 h-12 bg-purple-500 rounded-xl text-xl font-black text-white active:scale-90 shadow-sm">+</button><button onClick={()=>setNumVal(p=>Math.min(99,p+10))} className="w-10 h-10 bg-purple-100 rounded-lg font-black text-[10px] text-purple-600 border-b-4 border-purple-200 active:translate-y-2">+10</button></div>
+                    <button onClick={()=>setStatus(numVal===numTarget?'success':'error')} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-xl shadow-md active:translate-y-1">蓋好大樓囉！ 🧱</button>
+                  </div>
+                )}
+              </main>
+
+              <footer className="py-4 text-center text-slate-300 text-[9px] font-black tracking-widest uppercase italic">
+                © 2026 ZOO MATH · 全功能手機部署版
+              </footer>
+            </div>
+          );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
+
